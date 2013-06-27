@@ -1,0 +1,18 @@
+<package>
+  <description brief="door_assist">
+
+     door_assist
+
+  </description>
+  <author>C.M. De La Iglesia</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/door_assist</url>
+
+  <depend package="roscpp"/>
+  <depend package="geometry_msgs"/>
+  <depend package="tf"/>
+
+</package>
+
+
