@@ -12,10 +12,15 @@ ros::ServiceClient plan_check;
 #define ROBOT_WIDTH_RAW 0.5
 #define ROBOT_WIDTH ROBOT_WIDTH_RAW*ROBOT_LOC_BUFFER
 
+//Takes in a door pose and width and returns
+//a set of global points next to the door
+//that the robot can go to get help
 void get_door_positions(geometry_msgs::PoseStamped door,
 			double door_width,
 			std::vector<geometry_msgs::PoseStamped>& global_points)
 {
+  //Use the door's position and orientation as
+  //a coordinate transform
   tf::Transform transform;
   transform.setOrigin(tf::Vector3(door.pose.position.x, door.pose.position.y,
 				  door.pose.position.z));
@@ -24,6 +29,7 @@ void get_door_positions(geometry_msgs::PoseStamped door,
 				       door.pose.orientation.z,
 				       door.pose.orientation.w));
   
+  //Positions relative to the door
   tf::Vector3 p1(ROBOT_WIDTH/2.0, 
 		 0.0 - door_width/2.0 - ROBOT_WIDTH/2.0, 
 		 0.0);
@@ -37,21 +43,24 @@ void get_door_positions(geometry_msgs::PoseStamped door,
 		 door_width/2.0 - ROBOT_WIDTH/2.0,
 		 0.0);
 
+  //Transform the relative positions into global positions
   std::vector<tf::Vector3> points;
   points.push_back(transform(p1));
   points.push_back(transform(p2));
   points.push_back(transform(p3));
   points.push_back(transform(p4));
 
+  //Copy the global positions into the return container
+  //and add in the orientation facing the door
   global_points.resize(points.size());
   tf::Quaternion turn_around;
-  turn_around.setEuler(0.0, 0.0, 0.0);
+  turn_around.setEuler(0.0, 0.0, 0.0); //TODO: find what values turn the robot 180deg
   tf::Quaternion face_door = transform.getRotation() + turn_around;
-  ROS_INFO("Door Rotation-- X: %f Y: %f Z: %f W: %f",
+  /*ROS_INFO("Door Rotation-- X: %f Y: %f Z: %f W: %f",
 	   face_door.getX(),
 	   face_door.getY(),
 	   face_door.getZ(),
-	   face_door.getW());
+	   face_door.getW());*/
   for(int i = 0; i < points.size(); i++) {
     global_points[i].header.frame_id = "/map";
     global_points[i].header.stamp = ros::Time::now();
@@ -66,8 +75,10 @@ void get_door_positions(geometry_msgs::PoseStamped door,
   }
 }
 
+//Gets the current position of the robot
 geometry_msgs::PoseStamped get_position()
 {
+  //Looks up the position using TF
   tf::TransformListener listener;
   tf::StampedTransform transform;
   try{
@@ -81,6 +92,7 @@ geometry_msgs::PoseStamped get_position()
     ROS_ERROR("%s",ex.what());
   } 
 
+  //Copies the info into a PoseStamped
   geometry_msgs::PoseStamped current_pos;
   current_pos.header.frame_id = "/map";
   current_pos.header.stamp = ros::Time::now();
@@ -95,6 +107,7 @@ geometry_msgs::PoseStamped get_position()
   return current_pos;
 }
 
+//Returns the distance between to poses
 double dist(geometry_msgs::PoseStamped p1, geometry_msgs::PoseStamped p2)
 {
   double p1_x = p1.pose.position.x;
@@ -105,6 +118,8 @@ double dist(geometry_msgs::PoseStamped p1, geometry_msgs::PoseStamped p2)
 	      (p1_y - p2_y)*(p1_y - p2_y));
  }
 
+//Checks if there is a valid path between two points
+//(no major obstacles between them)
 bool valid_path(geometry_msgs::PoseStamped start,
 		geometry_msgs::PoseStamped end)
 {
@@ -188,6 +203,7 @@ int main(int argc, char* argv[])
 
   ROS_INFO("Done.");*/
 
+  //Test code for door position
   geometry_msgs::PoseStamped door;
   tf::Quaternion door_rot;
   door_rot.setEuler(0.0,0.0,1.0);
@@ -195,8 +211,10 @@ int main(int argc, char* argv[])
   door.pose.orientation.y = door_rot.getY();
   door.pose.orientation.z = door_rot.getZ();
   door.pose.orientation.w = door_rot.getW();
+  
   std::vector<geometry_msgs::PoseStamped> points;
   get_door_positions(door, 2.0, points);
+
   ROS_INFO("Number of door positions: %lu", points.size());
   for(int i = 0; i < points.size(); i++) {
     ROS_INFO("Point %d-- X: %f Y: %f Z: %f", i, 
@@ -206,7 +224,6 @@ int main(int argc, char* argv[])
   }
 
   move_pub.publish(points[0]);
-
   ROS_INFO("Goal Published.");
 
   //Spin
