@@ -54,13 +54,9 @@ void get_door_positions(geometry_msgs::PoseStamped door,
   //and add in the orientation facing the door
   global_points.resize(points.size());
   tf::Quaternion turn_around;
-  turn_around.setEuler(0.0, 0.0, 0.0); //TODO: find what values turn the robot 180deg
-  tf::Quaternion face_door = transform.getRotation() + turn_around;
-  /*ROS_INFO("Door Rotation-- X: %f Y: %f Z: %f W: %f",
-	   face_door.getX(),
-	   face_door.getY(),
-	   face_door.getZ(),
-	   face_door.getW());*/
+  turn_around.setEuler(0.0, 0.0, 3.14159265359);
+  tf::Quaternion face_door = transform.getRotation() + turn_around; //Rotate 180deg
+
   for(int i = 0; i < points.size(); i++) {
     global_points[i].header.frame_id = "/map";
     global_points[i].header.stamp = ros::Time::now();
@@ -151,7 +147,6 @@ int main(int argc, char* argv[])
   //Init ROS
   ros::init(argc, argv, "door_assist");
 
-
   //Advertise message
   ros::NodeHandle n;
   ros::Publisher move_pub = n.advertise<geometry_msgs::PoseStamped>("move_base_simple/goal", 1);
@@ -163,16 +158,45 @@ int main(int argc, char* argv[])
   //Connect to move_base for planning a path
   plan_check = n.serviceClient<nav_msgs::GetPlan>("move_base/make_plan");
 
+  // In the real code, this position and width would be passed in
+  geometry_msgs::PoseStamped door_pose;
+  door_pose.pose.orientation.w = 1.0;
+  double door_width = 1.0;
+
+  //Get the global positions around the door
+  vector<geometry_msgs::PoseStamped> possible_positions;
+  get_door_positions(door_pose, door_width, possible_positions);
+
+  //Find a position that the robot can move to and move there
+  geometry_msgs::PoseStamped current_position;
+  current_position.header.frame_id = ""; //Tells move_base to use current position
+  current_position.header.stamp = ros::Time::now();
+  current_position.pose.orientation.w = 1.0;
+  for(int i = 0; i < possible_positions.size(); i++) {
+    if(valid_path(current_position, possible_positions[i])) {
+      move_pub.publish(possible_position[i]);
+      break;
+    }
+  }
+
+  ros::spinOnce();
+
+
+
+  /*
+   * ALL THE FOLLOWING CODE IS TEST CODE
+   */
+
   //Create message
-  geometry_msgs::PoseStamped goal;
+  /*geometry_msgs::PoseStamped goal;
   goal.header.frame_id = "/base_footprint";
   goal.header.stamp = ros::Time::now();
   goal.pose.position.x = 1.0;
-  goal.pose.position.y = 1.0;
+  goal.pose.position.y = 1.0;.
   goal.pose.orientation.w = 1.0;
 
   //Publish message
-  /*  move_pub.publish(goal);
+  move_pub.publish(goal);
 
   ROS_INFO("Goal Published");*/
 
@@ -204,7 +228,7 @@ int main(int argc, char* argv[])
   ROS_INFO("Done.");*/
 
   //Test code for door position
-  geometry_msgs::PoseStamped door;
+  /*  geometry_msgs::PoseStamped door;
   tf::Quaternion door_rot;
   door_rot.setEuler(0.0,0.0,1.0);
   door.pose.orientation.x = door_rot.getX();
@@ -224,12 +248,23 @@ int main(int argc, char* argv[])
   }
 
   move_pub.publish(points[0]);
+
+  geometry_msgs::PoseStamped rotated;
+  tf::Quaternion rotation;
+  rotation.setEuler(0.0,0.0,3.14159265359);
+  rotated.pose.orientation.x = rotation.getX();
+  rotated.pose.orientation.y = rotation.getY();
+  rotated.pose.orientation.z = rotation.getZ();
+  rotated.pose.orientation.w = rotation.getW();
+  rotated.header.stamp = ros::Time::now();
+  rotated.header.frame_id = "/base_footprint";
+  move_pub.publish(rotated);
   ROS_INFO("Goal Published.");
 
   //Spin
   ros::spinOnce();
 
-  /*  //Wait a few seconds for the message to publish
+  //Wait a few seconds for the message to publish
   ros::Rate sleep_time(0.25);
   sleep_time.sleep();*/
 

@@ -73,7 +73,9 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 ## Declare a cpp executable
 # add_executable(door_assist_node src/door_assist_node.cpp)
 add_executable(door_assist src/main.cpp)
+#add_executable(Test src/Test.cpp)
 target_link_libraries(door_assist ${catkin_LIBRARIES})
+#target_link_libraries(Test ${catkin_LIBRARIES})
 
 
 ## Add cmake target dependencies of the executable/library

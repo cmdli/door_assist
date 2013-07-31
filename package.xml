@@ -43,6 +43,8 @@
   <build_depend>roscpp</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>tf</build_depend>
+  <build_depend>opencv2</build_depend>
+  <build_depend>cv_bridge</build_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
